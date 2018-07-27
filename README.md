@@ -70,9 +70,10 @@ let myObj: LabelledValue = { size: 10, label: "Size 10 Object" };
 
 // 其他
 interface SquareConfig {
-  color?: string;            // 可选属性
-  readonly x: number;        // 只读属性
-  [propName: string]: any;   // 任意属性
+    color?: string;            // 可选属性
+    readonly x: number;        // 只读属性
+    age: string | number       // 联合类型
+    [propName: string]: any;   // 任意属性
 }
 
 // 函数类型
@@ -140,11 +141,18 @@ var Student = /** @class */ (function () {
 
 函数声明
 ```typescript
-// myAdd has the full function type
-let myAdd = function(x: number, y: number): number { return x + y; };
 
-// The parameters `x` and `y` have the type number
-let myAdd: (baseValue: number, increment: number) => number = function(x, y) { return x + y; };
+// 函数声明
+function add1(x: number, y: number): number {
+    return x + y;
+}
+
+// add2的类型会通过类型推论确定
+let add2 = function(x: number, y: number): number { return x + y; };
+
+// 指定add3的类型
+let add3: (x: number, y: number) => number = function(x: number, y: number): number { return x + y; };
+
 ```
 
 函数重载
@@ -156,3 +164,105 @@ function func(x):any{
    
 }
 ```
+
+### 泛型
+
+```typescript
+// 变量类型T,输入输出都是T类型
+function identity<T>(arg: T): T {
+    return arg;
+}
+let output = identity<string>("myString") // 显示声明
+let output = identity("myString");      // 类型推论,编译器自动推断类型
+```
+
+```typescript
+// 定义泛型函数
+function identity<T>(arg: T): T {
+    return arg;
+}
+
+// 函数类型中直接使用泛型
+let myIdentity1: <U>(arg: U) => U = identity;
+
+// 接口中使用泛型
+interface GenericIdentityFn {
+    <T>(arg: T): T;
+}
+let myIdentity2: GenericIdentityFn = identity;
+
+// 泛型参数当作接口的一个参数
+interface GenericIdentityFn<T> {
+    (arg: T): T;
+}
+let myIdentity3: GenericIdentityFn<number> = identity;
+```
+
+```typescript
+// 泛型继承接口
+interface Lengthwise {
+    length: number;
+}
+
+function loggingIdentity<T extends Lengthwise>(arg: T): T {
+    console.log(arg.length);  
+    return arg;
+}
+
+```
+
+### 类型推论
+> Typescript中的类型推论发生在初始化变量和成员，设置默认参数值和决定函数返回值时
+
+```js
+// 
+
+let x = 3;  // x推断为数字
+x = "34";   // Type '"34"' is not assignable to type 'number'
+
+// 推断为联合类型
+let x = [0, "string"];        // number | string
+let obj = [new A(), new B()]; // A | B
+
+```
+
+### 类型兼容性
+
+```js
+
+// 对象字面量  小 = 大
+let x: { name: string };
+let y = { name: 'Bob', age: "22" };
+x = y;
+
+// 函数返回结果  大 = 小
+let x = () => ({name: 'Alice'});
+let y = () => ({name: 'Alice', location: 'Seattle'});
+x = y; // OK
+y = x; // Error because x() lacks a location property
+
+```
+
+```js
+// 参数个数 小 = 大
+let x = (a: number) => 0;
+let y = (b: number, s: string) => 0;
+
+y = x; // OK
+x = y; // Error
+```
+### 模块
+
+```js
+// JQuery.d.ts
+declare let $: JQuery;
+export default $;
+
+// 引入JQuery
+import $ from "JQuery";
+
+// 可以使用如下指令打包成各个模块加载系统使用的代码
+tsc --module [commonjs | amd | umd | es6 | ...] index.ts
+```
+
+
